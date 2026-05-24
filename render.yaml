@@ -6,7 +6,7 @@ services:
     runtime: static
     plan: free
     buildCommand: npm ci && npm run build
-    staticPublishPath: ./dist
+    staticPublishPath: dist
     pullRequestPreviewsEnabled: true
     headers:
       - path: /assets/*
