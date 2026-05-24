@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Synapse · AI Prompt Studio</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+</head>
+<body>
+  <!-- 动态背景 -->
+  <div class="bg-grid"></div>
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+  <div class="bg-glow glow-3"></div>
+  <canvas id="particles"></canvas>
+
+  <!-- 顶部导航 -->
+  <header class="topbar glass">
+    <div class="brand">
+      <div class="logo">
+        <svg viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="6" stroke="url(#g1)" stroke-width="2"/>
+          <circle cx="6" cy="8" r="2.5" fill="url(#g1)"/>
+          <circle cx="26" cy="8" r="2.5" fill="url(#g1)"/>
+          <circle cx="6" cy="24" r="2.5" fill="url(#g1)"/>
+          <circle cx="26" cy="24" r="2.5" fill="url(#g1)"/>
+          <path d="M8 9 L13 14 M24 9 L19 14 M8 23 L13 18 M24 23 L19 18" stroke="url(#g1)" stroke-width="1.5"/>
+          <defs>
+            <linearGradient id="g1" x1="0" y1="0" x2="32" y2="32">
+              <stop offset="0%" stop-color="#a855f7"/>
+              <stop offset="100%" stop-color="#22d3ee"/>
+            </linearGradient>
+          </defs>
+        </svg>
+      </div>
+      <div>
+        <h1>Synapse</h1>
+        <span class="tag">AI Prompt Studio · v1.0</span>
+      </div>
+    </div>
+
+    <nav class="nav-pills">
+      <button class="pill active" data-view="chat">⚡ Chat</button>
+      <button class="pill" data-view="prompts">✦ Prompts</button>
+      <button class="pill" data-view="about">◎ About</button>
+    </nav>
+
+    <div class="status">
+      <span class="dot pulse"></span>
+      <span id="modelLabel">Claude Sonnet · Mock</span>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- 左侧：模型 / 参数 -->
+    <aside class="sidebar glass">
+      <h3 class="side-title">⚙ Model</h3>
+      <div class="model-list" id="modelList">
+        <div class="model-card active live" data-model="deepseek">
+          <div class="m-name">DeepSeek Chat <span class="badge-live">LIVE</span></div>
+          <div class="m-meta">DeepSeek · Real API</div>
+        </div>
+        <div class="model-card" data-model="claude">
+          <div class="m-name">Claude Sonnet 4.5</div>
+          <div class="m-meta">Anthropic · Mock</div>
+        </div>
+        <div class="model-card" data-model="gpt">
+          <div class="m-name">GPT-4o</div>
+          <div class="m-meta">OpenAI · Mock</div>
+        </div>
+        <div class="model-card" data-model="llama">
+          <div class="m-name">Llama 3.1 70B</div>
+          <div class="m-meta">Ollama · Mock</div>
+        </div>
+      </div>
+
+      <div id="apiKeyBox" class="api-key-box">
+        <label>🔑 DeepSeek API Key</label>
+        <input type="password" id="apiKey" placeholder="sk-..." autocomplete="off" />
+        <div class="api-hint">key 仅存于浏览器 localStorage</div>
+      </div>
+
+      <h3 class="side-title">🎛 Parameters</h3>
+      <div class="slider-row">
+        <label>Temperature <span id="tempVal">0.7</span></label>
+        <input type="range" id="temp" min="0" max="2" step="0.1" value="0.7" />
+      </div>
+      <div class="slider-row">
+        <label>Top-P <span id="topVal">0.9</span></label>
+        <input type="range" id="topp" min="0" max="1" step="0.05" value="0.9" />
+      </div>
+      <div class="slider-row">
+        <label>Max Tokens <span id="tokVal">2048</span></label>
+        <input type="range" id="tok" min="256" max="8192" step="256" value="2048" />
+      </div>
+
+      <h3 class="side-title">📊 Session</h3>
+      <div class="stats">
+        <div class="stat"><div class="v" id="statMsg">0</div><div class="l">Messages</div></div>
+        <div class="stat"><div class="v" id="statTok">0</div><div class="l">Tokens</div></div>
+      </div>
+    </aside>
+
+    <!-- 主面板：Chat -->
+    <section class="panel glass" id="view-chat">
+      <div class="chat-area" id="chatArea">
+        <div class="welcome">
+          <div class="hero-orb"></div>
+          <h2>Welcome to <span class="grad">Synapse</span></h2>
+          <p>多模型 AI 对话与 Prompt 工程实验台。选择一个模板开始 ↓</p>
+          <div class="quick-prompts">
+            <button class="qp">💡 解释 Transformer 注意力机制</button>
+            <button class="qp">⚛️ 用 React 写一个 Todo</button>
+            <button class="qp">🐛 帮我审查这段代码</button>
+            <button class="qp">📝 优化我的 Prompt</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="composer">
+        <div class="composer-inner glass">
+          <div id="attachList" class="attach-list"></div>
+          <textarea id="input" placeholder="给 AI 发送一条消息...  (⌘/Ctrl + Enter 发送)" rows="1"></textarea>
+          <div class="composer-actions">
+            <div class="tools">
+              <input type="file" id="fileInput" multiple hidden
+                accept=".txt,.md,.json,.csv,.log,.xml,.yml,.yaml,.html,.css,.js,.ts,.jsx,.tsx,.vue,.py,.java,.c,.cpp,.h,.go,.rs,.rb,.php,.sql,.sh,.bat,.ini,.env,.toml" />
+              <button class="tool" title="上传文本/代码文件" id="attachBtn">📎</button>
+              <button class="tool" title="包裹为代码块" id="codeBtn">{ }</button>
+              <button class="tool" title="清空对话" id="clearBtn">⟳</button>
+            </div>
+            <button class="send" id="sendBtn">
+              <span>发送</span>
+              <svg viewBox="0 0 24 24" width="16" height="16"><path d="M3 12L21 4L14 21L11 13L3 12Z" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Prompt 库 -->
+    <section class="panel glass hidden" id="view-prompts">
+      <div class="prompts-header">
+        <h2>✦ Prompt Library</h2>
+        <p>精选 Prompt Engineering 模板，点击即可载入对话框</p>
+      </div>
+      <div class="prompt-grid" id="promptGrid"></div>
+    </section>
+
+    <!-- About -->
+    <section class="panel glass hidden about-panel" id="view-about">
+      <h2>◎ About Synapse</h2>
+      <p class="lead">一个面向 <b>AI 工程师 / 全栈开发者</b> 的多模型 Prompt 工作台。</p>
+      <div class="feat-grid">
+        <div class="feat"><div class="fi">🧠</div><h4>Multi-Model</h4><p>统一接口对接 Claude / GPT / Ollama / vLLM。</p></div>
+        <div class="feat"><div class="fi">⚡</div><h4>Zero-Build</h4><p>纯 HTML/CSS/JS，无依赖、无构建。</p></div>
+        <div class="feat"><div class="fi">🎨</div><h4>Glassmorphism</h4><p>玻璃拟态 + 霓虹渐变 + 粒子背景。</p></div>
+        <div class="feat"><div class="fi">📚</div><h4>Prompt Library</h4><p>内置 8+ 高质量提示词模板。</p></div>
+        <div class="feat"><div class="fi">🔧</div><h4>Tunable</h4><p>Temperature / Top-P / Max Tokens 实时调节。</p></div>
+        <div class="feat"><div class="fi">📱</div><h4>Responsive</h4><p>桌面 / 平板 / 手机自适应。</p></div>
+      </div>
+      <div class="stack">
+        <span>HTML5</span><span>CSS3</span><span>Vanilla JS</span><span>Canvas API</span>
+        <span>Prompt Engineering</span><span>Glassmorphism</span>
+      </div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
